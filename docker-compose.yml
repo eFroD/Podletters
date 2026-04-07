@@ -1,0 +1,125 @@
+# Podletters — local newsletter-to-podcast pipeline
+#
+# Services:
+#   redis    : Celery broker + dedup store
+#   minio    : S3-compatible object storage for episodes
+#   ollama   : LLM serving (Qwen2.5-32B, GPU)
+#   worker   : Celery worker running ingestion / TTS / post-processing (GPU)
+#   api      : FastAPI RSS endpoint
+#
+# GPU access uses the NVIDIA Container Toolkit. Both `ollama` and `worker`
+# request the GPU but the application logic (PRD §10) ensures the LLM and
+# TTS models are loaded sequentially so peak VRAM stays ≤ 24 GB.
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: podletters-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: podletters-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: podletters-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: podletters-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    volumes:
+      - ./refs:/app/refs:ro
+      - ./src:/app/src:ro
+      - worker-cache:/root/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: >
+      celery -A podletters.celery_app worker
+      --loglevel=INFO
+      --concurrency=1
+      -B
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: podletters-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./refs:/app/refs:ro
+      - ./src:/app/src:ro
+    command: >
+      uvicorn podletters.streaming.api:app
+      --host 0.0.0.0 --port 8080
+
+volumes:
+  redis-data:
+  minio-data:
+  ollama-models:
+  worker-cache:
