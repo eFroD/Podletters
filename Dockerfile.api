@@ -1,0 +1,31 @@
+# Podletters FastAPI image.
+#
+# Serves the RSS feed and any auxiliary HTTP endpoints. No GPU, no audio
+# stack — just FastAPI + boto3 to read episode metadata from MinIO.
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+RUN pip install --upgrade pip \
+    && pip install \
+        "pydantic>=2.6" \
+        "pydantic-settings>=2.2" \
+        "fastapi>=0.110" \
+        "uvicorn[standard]>=0.29" \
+        "boto3>=1.34" \
+        "feedgen>=1.0" \
+        "python-json-logger>=2.0"
+
+# Source is bind-mounted from the host in development (see docker-compose.yml).
+ENV PYTHONPATH=/app/src
+
+EXPOSE 8080
+
+CMD ["uvicorn", "podletters.streaming.api:app", "--host", "0.0.0.0", "--port", "8080"]

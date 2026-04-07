@@ -1,0 +1,56 @@
+# Podletters Celery worker image.
+#
+# Runs ingestion, LLM client, F5-TTS rendering, audio post-processing and
+# MinIO upload tasks. Needs CUDA at runtime for F5-TTS, plus ffmpeg for
+# pydub / loudness normalization.
+#
+# We start from the official PyTorch CUDA runtime image so torch is already
+# matched against the CUDA toolkit. F5-TTS is installed from PyPI; if a
+# specific git revision is required later, swap to `pip install git+...`.
+
+FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# System deps: ffmpeg for audio encoding/normalization, libsndfile for
+# soundfile, build tooling for any wheels that need compilation.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libsndfile1 \
+        build-essential \
+        git \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python deps first for layer caching.
+COPY pyproject.toml ./
+RUN pip install --upgrade pip \
+    && pip install \
+        "pydantic>=2.6" \
+        "pydantic-settings>=2.2" \
+        "imap-tools>=1.6" \
+        "trafilatura>=1.9" \
+        "html2text>=2024.2.26" \
+        "httpx>=0.27" \
+        "celery[redis]>=5.4" \
+        "redis>=5.0" \
+        "boto3>=1.34" \
+        "numpy>=1.26" \
+        "soundfile>=0.12" \
+        "pyloudnorm>=0.1.1" \
+        "pydub>=0.25" \
+        "feedgen>=1.0" \
+        "python-json-logger>=2.0" \
+        "f5-tts"
+
+# Source is bind-mounted from the host in development (see docker-compose.yml).
+# For production builds, COPY src/ here instead.
+ENV PYTHONPATH=/app/src
+
+# Default command is overridden by docker-compose.
+CMD ["celery", "-A", "podletters.celery_app", "worker", "--loglevel=INFO", "--concurrency=1", "-B"]
