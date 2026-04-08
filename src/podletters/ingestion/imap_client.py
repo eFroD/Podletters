@@ -84,6 +84,9 @@ def _iter_fetch(settings: Settings, whitelist: set[str]) -> Iterator[FetchedEmai
 
 
 if __name__ == "__main__":  # pragma: no cover - manual smoke test
-    logging.basicConfig(level=logging.INFO)
-    for email in fetch_new_emails():
-        print(f"[{email.sender}] {email.subject} ({email.received_at.isoformat()})")
+    # Richer smoke test (fetch + clean + print first body) lives in
+    # podletters.ingestion.smoke; this shim keeps the documented
+    # entry point working.
+    from podletters.ingestion.smoke import main
+
+    raise SystemExit(main())
