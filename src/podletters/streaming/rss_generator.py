@@ -83,6 +83,8 @@ def build_feed(
 
         fe.podcast.itunes_duration(_duration_str(ep.duration_seconds))
         fe.podcast.itunes_author(settings.podcast_author)
+        if ep.episode_number:
+            fe.podcast.itunes_episode(ep.episode_number)
 
     rss_xml = fg.rss_str(pretty=True).decode("utf-8")
     logger.info("Generated RSS feed: %d episodes, %d bytes", len(episodes), len(rss_xml))

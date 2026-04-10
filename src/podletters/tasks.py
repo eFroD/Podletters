@@ -244,6 +244,7 @@ def postprocess_audio(self, prev_result: dict) -> dict:
 def upload_episode(self, prev_result: dict) -> dict:
     """Upload MP3 + metadata JSON to MinIO and clean up the temp file."""
     from podletters.models import EpisodeMetadata, TranscriptPayload
+    from podletters.storage.episode_counter import EpisodeCounter
     from podletters.storage.minio_client import MinIOClient
 
     settings = get_settings()
@@ -252,6 +253,7 @@ def upload_episode(self, prev_result: dict) -> dict:
     date_str = prev_result["date_str"]
     slug = prev_result["slug"]
 
+    episode_number = EpisodeCounter().next()
     minio = MinIOClient()
     episode_id = f"{date_str}-{slug}"
     mp3_key = f"{date_str[:4]}/{date_str[4:6]}/{mp3_path.name}"
@@ -259,6 +261,7 @@ def upload_episode(self, prev_result: dict) -> dict:
 
     metadata = EpisodeMetadata(
         episode_id=episode_id,
+        episode_number=episode_number,
         title=transcript.episode_title,
         description=transcript.episode_description,
         source_sender=prev_result["payload"].get("sender", ""),
