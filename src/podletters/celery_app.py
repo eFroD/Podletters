@@ -11,8 +11,12 @@ from celery import Celery
 from celery.schedules import crontab
 
 from podletters.config import get_settings
+from podletters.logging_config import setup_logging
 
 settings = get_settings()
+
+# Structured JSON logging for all pipeline stages (NFR-07).
+setup_logging()
 
 app = Celery("podletters")
 
