@@ -82,8 +82,9 @@ services:
       ollama:
         condition: service_started
     volumes:
-      - ./refs:/app/refs:ro
+      - ./refs:/app/refs
       - ./src:/app/src:ro
+      - ./scripts:/app/scripts:ro
       - worker-cache:/root/.cache
     deploy:
       resources:
