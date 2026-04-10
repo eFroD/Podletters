@@ -6,7 +6,7 @@
 COMPOSE ?= docker compose
 WORKER  ?= podletters-worker
 
-.PHONY: help up down restart logs ps build worker-shell test lint format clean smoke-ingest
+.PHONY: help up down restart logs ps build worker-shell test lint format clean smoke-ingest smoke-llm
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -46,3 +46,6 @@ clean: ## Remove containers AND named volumes (destructive)
 
 smoke-ingest: ## Fetch + clean the first unread newsletter via the worker
 	$(COMPOSE) exec worker python -m podletters.ingestion.smoke
+
+smoke-llm: ## Generate a transcript from a sample newsletter via Ollama
+	$(COMPOSE) exec worker python -m podletters.llm.smoke
