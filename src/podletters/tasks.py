@@ -231,9 +231,7 @@ def postprocess_audio(self, prev_result: dict) -> dict:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Task 29 (placeholder): upload_episode_task
-# Full MinIO integration comes in task 28/29 — this stub passes data
-# through so the chain doesn't break during development.
+# Task 29: upload_episode_task
 # ──────────────────────────────────────────────────────────────────────
 
 @app.task(
@@ -244,11 +242,42 @@ def postprocess_audio(self, prev_result: dict) -> dict:
     max_retries=3,
 )
 def upload_episode(self, prev_result: dict) -> dict:
-    """Upload MP3 + metadata to MinIO. (Stub — wired in task 29.)"""
-    logger.info(
-        "[upload] Episode ready: %s (%s, %d bytes)",
-        prev_result.get("mp3_filename"),
-        prev_result.get("slug"),
-        prev_result.get("file_size_bytes", 0),
+    """Upload MP3 + metadata JSON to MinIO and clean up the temp file."""
+    from podletters.models import EpisodeMetadata, TranscriptPayload
+    from podletters.storage.minio_client import MinIOClient
+
+    settings = get_settings()
+    transcript = TranscriptPayload(**prev_result["transcript"])
+    mp3_path = Path(prev_result["mp3_path"])
+    date_str = prev_result["date_str"]
+    slug = prev_result["slug"]
+
+    minio = MinIOClient()
+    episode_id = f"{date_str}-{slug}"
+    mp3_key = f"{date_str[:4]}/{date_str[4:6]}/{mp3_path.name}"
+    file_url = minio.get_public_url(mp3_key)
+
+    metadata = EpisodeMetadata(
+        episode_id=episode_id,
+        title=transcript.episode_title,
+        description=transcript.episode_description,
+        source_sender=prev_result["payload"].get("sender", ""),
+        duration_seconds=prev_result["duration_seconds"],
+        file_size_bytes=prev_result["file_size_bytes"],
+        file_url=file_url,
+        created_at=datetime.now(timezone.utc),
+        transcript_segments=len(transcript.segments),
     )
-    return prev_result
+
+    mp3_key = minio.upload_episode(mp3_path, metadata)
+    logger.info("[upload] Uploaded to MinIO: %s", mp3_key)
+
+    # Clean up temp MP3.
+    mp3_path.unlink(missing_ok=True)
+
+    return {
+        "episode_id": episode_id,
+        "title": transcript.episode_title,
+        "mp3_key": mp3_key,
+        "file_url": file_url,
+    }
