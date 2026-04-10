@@ -107,6 +107,56 @@ def encode_mp3(
     return output_path
 
 
+def compress_dynamic_range(
+    audio: np.ndarray,
+    sample_rate: int,
+    *,
+    threshold_db: float = -20.0,
+    ratio: float = 3.0,
+    attack_ms: float = 5.0,
+    release_ms: float = 50.0,
+) -> np.ndarray:
+    """Apply simple feed-forward dynamic range compression.
+
+    Reduces volume jumps between the two speakers (PRD §5.4). Parameters
+    are intentionally conservative for speech — a 3:1 ratio above −20 dB
+    smooths loud peaks without audible pumping.
+
+    Toggled via ``ENABLE_COMPRESSION`` in Settings (default: True).
+    """
+    if len(audio) == 0:
+        return audio
+
+    threshold_lin = 10 ** (threshold_db / 20)
+    attack_coeff = np.exp(-1.0 / (attack_ms * sample_rate / 1000))
+    release_coeff = np.exp(-1.0 / (release_ms * sample_rate / 1000))
+
+    envelope = np.zeros_like(audio)
+    env = 0.0
+    for i in range(len(audio)):
+        level = abs(audio[i])
+        if level > env:
+            env = attack_coeff * env + (1 - attack_coeff) * level
+        else:
+            env = release_coeff * env + (1 - release_coeff) * level
+        envelope[i] = env
+
+    gain = np.ones_like(audio)
+    above = envelope > threshold_lin
+    if np.any(above):
+        db_over = 20 * np.log10(np.clip(envelope[above] / threshold_lin, 1e-10, None))
+        gain_reduction_db = db_over * (1 - 1 / ratio)
+        gain[above] = 10 ** (-gain_reduction_db / 20)
+
+    compressed = audio * gain
+    logger.info(
+        "Dynamic range compression: threshold=%.0f dB, ratio=%.1f:1",
+        threshold_db,
+        ratio,
+    )
+    return compressed
+
+
 def postprocess(
     audio: np.ndarray,
     sample_rate: int,
@@ -115,15 +165,18 @@ def postprocess(
     title: str = "",
     artist: str = "",
     date: str = "",
+    enable_compression: bool = True,
     settings: Settings | None = None,
 ) -> Path:
-    """Full post-processing pipeline: normalize → limit → encode.
+    """Full post-processing pipeline: normalize → compress → limit → encode.
 
     Returns the path to the final MP3 file.
     """
     settings = settings or get_settings()
 
     audio = normalize_loudness(audio, sample_rate, settings.target_lufs)
+    if enable_compression:
+        audio = compress_dynamic_range(audio, sample_rate)
     audio = _true_peak_limit(audio, ceiling_dbtp=-1.0)
     return encode_mp3(
         audio,
@@ -136,4 +189,4 @@ def postprocess(
     )
 
 
-__all__ = ["encode_mp3", "normalize_loudness", "postprocess"]
+__all__ = ["compress_dynamic_range", "encode_mp3", "normalize_loudness", "postprocess"]

@@ -11,6 +11,7 @@ import pytest
 
 from podletters.postprocessing.normalize import (
     _true_peak_limit,
+    compress_dynamic_range,
     normalize_loudness,
     postprocess,
 )
@@ -48,6 +49,27 @@ def test_true_peak_limit_noop_if_below() -> None:
     quiet = np.array([0.1, -0.1], dtype=np.float32)
     limited = _true_peak_limit(quiet, ceiling_dbtp=-1.0)
     np.testing.assert_array_equal(limited, quiet)
+
+
+def test_compress_dynamic_range_reduces_peaks() -> None:
+    sr = 22050
+    # Build a signal with a loud burst followed by quiet
+    quiet = 0.05 * np.ones(sr, dtype=np.float32)
+    loud = 0.9 * np.ones(sr, dtype=np.float32)
+    audio = np.concatenate([quiet, loud, quiet])
+    compressed = compress_dynamic_range(audio, sr, threshold_db=-20.0, ratio=4.0)
+    # Check the steady-state portion (second half of the loud burst) —
+    # the first few ms are uncompressed due to envelope attack time.
+    mid = sr + sr // 2
+    loud_rms_before = np.sqrt(np.mean(audio[mid : 2 * sr] ** 2))
+    loud_rms_after = np.sqrt(np.mean(compressed[mid : 2 * sr] ** 2))
+    assert loud_rms_after < loud_rms_before
+
+
+def test_compress_dynamic_range_empty() -> None:
+    empty = np.array([], dtype=np.float32)
+    result = compress_dynamic_range(empty, 22050)
+    assert len(result) == 0
 
 
 def test_postprocess_writes_mp3(tmp_path: Path) -> None:
