@@ -8,6 +8,7 @@ concurrency (FR-07.3 — avoid GPU memory conflicts), and enables
 from __future__ import annotations
 
 from celery import Celery
+from celery.schedules import crontab
 
 from podletters.config import get_settings
 
@@ -34,6 +35,19 @@ app.conf.update(
     # Timezone-aware scheduling.
     timezone="UTC",
     enable_utc=True,
+
+    # ── Celery Beat schedule (Task 26 / FR-07.1) ──────────────────
+    beat_schedule={
+        "poll-imap-for-newsletters": {
+            "task": "podletters.ingest_email",
+            "schedule": settings.poll_interval_seconds,  # default 900s
+        },
+    },
+
+    # ── Default retry policy (Task 27 / FR-07.2) ─────────────────
+    # Individual tasks can override via decorator kwargs.
+    task_default_retry_delay=60,        # 60 s initial delay
+    task_max_retries=3,                 # then dead-letter
 )
 
 # Auto-discover task modules.

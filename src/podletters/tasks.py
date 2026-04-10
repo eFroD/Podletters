@@ -36,7 +36,14 @@ def _slugify(text: str) -> str:
 # Task 22: ingest_email_task
 # ──────────────────────────────────────────────────────────────────────
 
-@app.task(name="podletters.ingest_email", bind=True)
+@app.task(
+    name="podletters.ingest_email",
+    bind=True,
+    autoretry_for=(ConnectionError, OSError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=3,
+)
 def ingest_email(self):
     """Poll IMAP, filter, deduplicate, clean, and fan-out one chain per newsletter."""
     from podletters.ingestion.dedup import DedupStore
@@ -88,7 +95,14 @@ def ingest_email(self):
 # Task 23: generate_transcript_task
 # ──────────────────────────────────────────────────────────────────────
 
-@app.task(name="podletters.generate_transcript", bind=True)
+@app.task(
+    name="podletters.generate_transcript",
+    bind=True,
+    autoretry_for=(ConnectionError, OSError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=3,
+)
 def generate_transcript(self, payload_dict: dict) -> dict:
     """Send newsletter through Ollama and parse the transcript."""
     from podletters.llm.ollama_client import OllamaClient
@@ -123,7 +137,14 @@ def generate_transcript(self, payload_dict: dict) -> dict:
 # Task 24: render_audio_task
 # ──────────────────────────────────────────────────────────────────────
 
-@app.task(name="podletters.render_audio", bind=True)
+@app.task(
+    name="podletters.render_audio",
+    bind=True,
+    autoretry_for=(RuntimeError, OSError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    max_retries=3,
+)
 def render_audio(self, prev_result: dict) -> dict:
     """Render transcript segments via F5-TTS and merge into a single waveform."""
     import numpy as np
@@ -160,7 +181,13 @@ def render_audio(self, prev_result: dict) -> dict:
 # Task 25: postprocess_audio_task
 # ──────────────────────────────────────────────────────────────────────
 
-@app.task(name="podletters.postprocess_audio", bind=True)
+@app.task(
+    name="podletters.postprocess_audio",
+    bind=True,
+    autoretry_for=(OSError,),
+    retry_backoff=True,
+    max_retries=3,
+)
 def postprocess_audio(self, prev_result: dict) -> dict:
     """Normalize loudness and encode to MP3."""
     import numpy as np
@@ -209,7 +236,13 @@ def postprocess_audio(self, prev_result: dict) -> dict:
 # through so the chain doesn't break during development.
 # ──────────────────────────────────────────────────────────────────────
 
-@app.task(name="podletters.upload_episode", bind=True)
+@app.task(
+    name="podletters.upload_episode",
+    bind=True,
+    autoretry_for=(ConnectionError, OSError),
+    retry_backoff=True,
+    max_retries=3,
+)
 def upload_episode(self, prev_result: dict) -> dict:
     """Upload MP3 + metadata to MinIO. (Stub — wired in task 29.)"""
     logger.info(
