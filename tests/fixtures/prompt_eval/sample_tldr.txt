@@ -1,0 +1,27 @@
+TLDR Newsletter — April 7, 2026
+
+BIG TECH & STARTUPS
+
+OpenAI Released GPT-5 — OpenAI launched GPT-5 today. The new model is 3x
+faster and 40% cheaper than GPT-4o. Early benchmarks show significant
+improvements on coding and math tasks.
+
+Google DeepMind Publishes Gemini 3 Paper — DeepMind shared details on
+Gemini 3, their next-generation multimodal model. It supports 2M token
+context and natively processes video.
+
+AI & MACHINE LEARNING
+
+Meta Open-Sources Llama 4 — Meta released Llama 4 with 120B parameters
+under an open license. The model matches GPT-4o on most benchmarks and
+runs on a single A100 GPU with 4-bit quantization.
+
+Anthropic Launches Claude 4 — Anthropic released Claude 4, focused on
+safety and reasoning. The model introduces a new alignment technique
+called Constitutional AI v2.
+
+DEVELOPER TOOLS
+
+GitHub Copilot Gets Agent Mode — GitHub announced that Copilot can now
+autonomously create pull requests and fix CI failures. The feature is
+available in VS Code and JetBrains IDEs.
