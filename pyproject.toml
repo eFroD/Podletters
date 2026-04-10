@@ -17,6 +17,7 @@ dependencies = [
     "soundfile>=0.12",
     "pyloudnorm>=0.1.1",
     "pydub>=0.25",
+    "mutagen>=1.47",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "feedgen>=1.0",

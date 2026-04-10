@@ -63,6 +63,37 @@ def _true_peak_limit(audio: np.ndarray, ceiling_dbtp: float = -1.0) -> np.ndarra
     return audio
 
 
+def _embed_cover_art(mp3_path: Path, cover_path: Path | None = None) -> None:
+    """Embed cover art into the MP3's ID3 tags if the cover file exists."""
+    if cover_path is None:
+        cover_path = Path("refs/cover.png")
+    if not cover_path.exists():
+        return
+    try:
+        from mutagen.id3 import APIC, ID3
+        from mutagen.mp3 import MP3
+
+        audio = MP3(str(mp3_path))
+        if audio.tags is None:
+            audio.add_tags()
+        mime = "image/png" if cover_path.suffix == ".png" else "image/jpeg"
+        audio.tags.add(
+            APIC(
+                encoding=3,  # UTF-8
+                mime=mime,
+                type=3,  # Cover (front)
+                desc="Cover",
+                data=cover_path.read_bytes(),
+            )
+        )
+        audio.save()
+        logger.info("Embedded cover art from %s", cover_path)
+    except ImportError:
+        logger.debug("mutagen not installed; skipping cover art embedding")
+    except Exception as exc:
+        logger.warning("Failed to embed cover art: %s", exc)
+
+
 def encode_mp3(
     audio: np.ndarray,
     sample_rate: int,
@@ -72,8 +103,9 @@ def encode_mp3(
     title: str = "",
     artist: str = "",
     date: str = "",
+    cover_path: Path | None = None,
 ) -> Path:
-    """Encode a float32 numpy waveform to MP3 with ID3 tags.
+    """Encode a float32 numpy waveform to MP3 with ID3 tags and optional cover art.
 
     Uses a temporary WAV as an intermediate step because pydub (ffmpeg)
     works best with file inputs.
@@ -102,6 +134,9 @@ def encode_mp3(
         bitrate=bitrate,
         tags=tags or None,
     )
+
+    _embed_cover_art(output_path, cover_path)
+
     size_mb = output_path.stat().st_size / 1e6
     logger.info("Encoded MP3: %s (%.2f MB, %s)", output_path, size_mb, bitrate)
     return output_path

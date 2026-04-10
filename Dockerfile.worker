@@ -44,6 +44,7 @@ RUN pip install --upgrade pip \
         "soundfile>=0.12" \
         "pyloudnorm>=0.1.1" \
         "pydub>=0.25" \
+        "mutagen>=1.47" \
         "feedgen>=1.0" \
         "python-json-logger>=2.0" \
         "f5-tts"
