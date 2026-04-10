@@ -6,7 +6,7 @@
 COMPOSE ?= docker compose
 WORKER  ?= podletters-worker
 
-.PHONY: help up down restart logs ps build worker-shell test lint format clean smoke-ingest smoke-llm bootstrap-voices
+.PHONY: help up down restart logs ps build worker-shell test lint format clean smoke-ingest smoke-llm smoke-tts bootstrap-voices
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -49,6 +49,9 @@ smoke-ingest: ## Fetch + clean the first unread newsletter via the worker
 
 smoke-llm: ## Generate a transcript from a sample newsletter via Ollama
 	$(COMPOSE) exec worker python -m podletters.llm.smoke
+
+smoke-tts: ## Render a sample transcript to WAV via F5-TTS
+	$(COMPOSE) exec worker python -m podletters.tts.smoke
 
 bootstrap-voices: ## Generate reference WAV clips for F5-TTS via Piper
 	$(COMPOSE) exec worker bash /app/scripts/bootstrap_voices.sh /app/refs
