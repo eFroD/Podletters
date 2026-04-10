@@ -10,6 +10,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# lxml (feedgen dep) and curl (healthcheck) require system libs.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libxml2-dev libxslt1-dev build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY pyproject.toml ./
