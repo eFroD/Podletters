@@ -102,6 +102,19 @@ class MinIOClient:
         metas.sort(key=lambda m: m.created_at, reverse=True)
         return metas
 
+    def delete_episode(self, metadata: EpisodeMetadata) -> None:
+        """Delete both the MP3 and JSON sidecar for an episode."""
+        prefix = self._key_prefix(metadata.created_at)
+        slug = metadata.episode_id
+        # Scan for objects matching this episode in the expected prefix.
+        paginator = self._s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                if slug in key:
+                    self._s3.delete_object(Bucket=self._bucket, Key=key)
+                    logger.info("[minio] Deleted: %s", key)
+
     def get_public_url(self, key: str) -> str:
         """Construct a direct-access URL for a stored object."""
         return f"{self._base_url}/{self._bucket}/{key}"
