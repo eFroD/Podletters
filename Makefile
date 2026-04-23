@@ -6,7 +6,7 @@
 COMPOSE ?= docker compose
 WORKER  ?= podletters-worker
 
-.PHONY: help up down restart logs ps build worker-shell test lint format clean smoke-ingest smoke-llm smoke-tts bootstrap-voices run-pipeline
+.PHONY: help up down restart logs ps build worker-shell test lint format clean smoke-ingest smoke-llm smoke-tts bootstrap-voices run-pipeline install lint-local format-local test-local
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -58,3 +58,15 @@ run-pipeline: ## Run the full MVP pipeline (IMAP → LLM → TTS → MP3)
 
 bootstrap-voices: ## Generate reference WAV clips for F5-TTS via Piper
 	$(COMPOSE) exec worker bash /app/scripts/bootstrap_voices.sh /app/refs
+
+install: ## Sync dependencies locally via uv (host-side dev env)
+	uv sync --extra dev
+
+lint-local: ## Run ruff lint on the host (requires `make install`)
+	uv run ruff check src tests
+
+format-local: ## Run ruff format on the host (requires `make install`)
+	uv run ruff format src tests
+
+test-local: ## Run unit tests on the host (requires `make install`)
+	uv run pytest tests/unit -q

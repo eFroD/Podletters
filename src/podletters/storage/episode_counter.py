@@ -11,7 +11,7 @@ import logging
 
 import redis
 
-from podletters.config import Settings, get_settings
+from podletters.config import get_settings
 
 logger = logging.getLogger(__name__)
 

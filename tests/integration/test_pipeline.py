@@ -16,8 +16,6 @@ Marked with ``@pytest.mark.integration`` so unit test runs can skip it.
 
 from __future__ import annotations
 
-import json
-import time
 
 import pytest
 

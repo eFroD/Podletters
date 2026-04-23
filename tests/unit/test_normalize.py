@@ -7,7 +7,6 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
-import pytest
 
 from podletters.postprocessing.normalize import (
     _true_peak_limit,
@@ -26,7 +25,6 @@ def _tone(freq: float = 440.0, duration: float = 1.0, sr: int = 22050) -> np.nda
 def test_normalize_loudness_adjusts_level() -> None:
     tone = _tone()
     before_meter = __import__("pyloudnorm").Meter(22050)
-    before_lufs = before_meter.integrated_loudness(tone)
     normalized = normalize_loudness(tone, 22050, target_lufs=-16.0)
     after_lufs = before_meter.integrated_loudness(normalized)
     assert abs(after_lufs - (-16.0)) < 0.5

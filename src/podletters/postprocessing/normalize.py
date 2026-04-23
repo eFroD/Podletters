@@ -6,17 +6,14 @@ Implements FR-04.1 (−16 LUFS), FR-04.2 (128 kbps MP3) and FR-04.3
 
 from __future__ import annotations
 
-import io
 import logging
 import tempfile
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pyloudnorm as pyln
 import soundfile as sf
 from pydub import AudioSegment
-from pydub.utils import mediainfo
 
 from podletters.config import Settings, get_settings
 
@@ -70,7 +67,7 @@ def _embed_cover_art(mp3_path: Path, cover_path: Path | None = None) -> None:
     if not cover_path.exists():
         return
     try:
-        from mutagen.id3 import APIC, ID3
+        from mutagen.id3 import APIC
         from mutagen.mp3 import MP3
 
         audio = MP3(str(mp3_path))

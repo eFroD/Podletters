@@ -12,7 +12,6 @@ Task graph (PRD §5.7)::
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import tempfile
@@ -23,7 +22,6 @@ from pathlib import Path
 from celery import chain
 
 from podletters.celery_app import app
-from podletters.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +33,7 @@ def _slugify(text: str) -> str:
 # ──────────────────────────────────────────────────────────────────────
 # Task 22: ingest_email_task
 # ──────────────────────────────────────────────────────────────────────
+
 
 @app.task(
     name="podletters.ingest_email",
@@ -95,6 +94,7 @@ def ingest_email(self):
 # Task 23: generate_transcript_task
 # ──────────────────────────────────────────────────────────────────────
 
+
 @app.task(
     name="podletters.generate_transcript",
     bind=True,
@@ -137,6 +137,7 @@ def generate_transcript(self, payload_dict: dict) -> dict:
 # Task 24: render_audio_task
 # ──────────────────────────────────────────────────────────────────────
 
+
 @app.task(
     name="podletters.render_audio",
     bind=True,
@@ -147,7 +148,6 @@ def generate_transcript(self, payload_dict: dict) -> dict:
 )
 def render_audio(self, prev_result: dict) -> dict:
     """Render transcript segments via F5-TTS and merge into a single waveform."""
-    import numpy as np
     import soundfile as sf
 
     from podletters.models import TranscriptPayload
@@ -181,6 +181,7 @@ def render_audio(self, prev_result: dict) -> dict:
 # Task 25: postprocess_audio_task
 # ──────────────────────────────────────────────────────────────────────
 
+
 @app.task(
     name="podletters.postprocess_audio",
     bind=True,
@@ -190,7 +191,6 @@ def render_audio(self, prev_result: dict) -> dict:
 )
 def postprocess_audio(self, prev_result: dict) -> dict:
     """Normalize loudness and encode to MP3."""
-    import numpy as np
     import soundfile as sf
 
     from podletters.models import TranscriptPayload
@@ -234,6 +234,7 @@ def postprocess_audio(self, prev_result: dict) -> dict:
 # Task 29: upload_episode_task
 # ──────────────────────────────────────────────────────────────────────
 
+
 @app.task(
     name="podletters.upload_episode",
     bind=True,
@@ -247,7 +248,6 @@ def upload_episode(self, prev_result: dict) -> dict:
     from podletters.storage.episode_counter import EpisodeCounter
     from podletters.storage.minio_client import MinIOClient
 
-    settings = get_settings()
     transcript = TranscriptPayload(**prev_result["transcript"])
     mp3_path = Path(prev_result["mp3_path"])
     date_str = prev_result["date_str"]
@@ -289,6 +289,7 @@ def upload_episode(self, prev_result: dict) -> dict:
 # ──────────────────────────────────────────────────────────────────────
 # Task 44: retention / cleanup task
 # ──────────────────────────────────────────────────────────────────────
+
 
 @app.task(name="podletters.cleanup_old_episodes", bind=True)
 def cleanup_old_episodes(self, max_age_days: int = 0) -> dict:

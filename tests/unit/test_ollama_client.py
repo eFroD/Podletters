@@ -91,9 +91,7 @@ def httpx_mock():
             else:
                 content = (text or "").encode()
                 headers = {"content-type": "text/plain"}
-            self._responses.append(
-                _httpx.Response(status_code, content=content, headers=headers)
-            )
+            self._responses.append(_httpx.Response(status_code, content=content, headers=headers))
 
         def get_request(self) -> _httpx.Request:
             assert self._requests, "No requests recorded"
@@ -111,7 +109,6 @@ def httpx_mock():
 
     mock = _Mock()
     transport = mock._transport()
-    original_post = _httpx.post
 
     def patched_post(url, **kwargs):
         client = _httpx.Client(transport=transport)
