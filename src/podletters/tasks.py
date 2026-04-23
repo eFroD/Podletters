@@ -284,3 +284,44 @@ def upload_episode(self, prev_result: dict) -> dict:
         "mp3_key": mp3_key,
         "file_url": file_url,
     }
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Task 44: retention / cleanup task
+# ──────────────────────────────────────────────────────────────────────
+
+@app.task(name="podletters.cleanup_old_episodes", bind=True)
+def cleanup_old_episodes(self, max_age_days: int = 0) -> dict:
+    """Delete episodes older than ``max_age_days`` from MinIO.
+
+    If ``max_age_days`` is 0 (default) or negative, the task is a no-op.
+    This keeps the PRD's "no automatic deletion" default while allowing
+    opt-in retention management via Celery Beat or a manual call::
+
+        cleanup_old_episodes.delay(max_age_days=90)
+    """
+    if max_age_days <= 0:
+        logger.info("[cleanup] Retention disabled (max_age_days=%d)", max_age_days)
+        return {"deleted": 0, "skipped": "retention disabled"}
+
+    from podletters.storage.minio_client import MinIOClient
+
+    minio = MinIOClient()
+    episodes = minio.list_episode_metadata()
+    cutoff = datetime.now(timezone.utc) - __import__("datetime").timedelta(days=max_age_days)
+    deleted = 0
+
+    for ep in episodes:
+        created = ep.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        if created < cutoff:
+            try:
+                minio.delete_episode(ep)
+                deleted += 1
+                logger.info("[cleanup] Deleted: %s (%s)", ep.episode_id, ep.title)
+            except Exception:
+                logger.exception("[cleanup] Failed to delete %s", ep.episode_id)
+
+    logger.info("[cleanup] Retention pass complete: deleted=%d", deleted)
+    return {"deleted": deleted, "max_age_days": max_age_days}
