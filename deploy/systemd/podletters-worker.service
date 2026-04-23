@@ -1,0 +1,29 @@
+[Unit]
+Description=Podletters Celery Worker (ingestion, LLM, TTS, upload)
+After=network.target redis.service
+Requires=redis.service
+
+[Service]
+Type=simple
+User=podletters
+Group=podletters
+WorkingDirectory=/opt/podletters
+EnvironmentFile=/opt/podletters/.env
+ExecStart=/opt/podletters/.venv/bin/celery \
+    -A podletters.celery_app worker \
+    --loglevel=INFO \
+    --concurrency=1 \
+    -B
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=podletters-worker
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/podletters/out /tmp
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+[Unit]
+Description=Podletters FastAPI RSS Server
+After=network.target
+
+[Service]
+Type=simple
+User=podletters
+Group=podletters
+WorkingDirectory=/opt/podletters
+EnvironmentFile=/opt/podletters/.env
+ExecStart=/opt/podletters/.venv/bin/uvicorn \
+    podletters.streaming.api:app \
+    --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=podletters-api
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadOnlyPaths=/opt/podletters/refs
+
+[Install]
+WantedBy=multi-user.target
