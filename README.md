@@ -39,17 +39,44 @@ http://<your-lan-ip>:8080/rss.xml
 - **Audio URLs 404?** MinIO must be reachable from the podcast client. Set
   `PODCAST_BASE_URL` in `.env` to `http://<ip>:9000`.
 
+## Local development
+
+Dependencies are managed with [uv](https://docs.astral.sh/uv/). `pyproject.toml`
+declares the deps and `uv.lock` pins them exactly — both are the single source
+of truth used by the Docker images and by CI.
+
+Install `uv` once (`curl -LsSf https://astral.sh/uv/install.sh | sh`), then:
+
+```bash
+make install        # uv sync --extra dev  (creates .venv/)
+make lint-local     # ruff check src tests
+make format-local   # ruff format src tests
+make test-local     # pytest tests/unit
+```
+
+Before opening a PR, run `make lint-local` and `make format-local` — the
+GitHub Actions `lint` workflow runs `ruff check` and `ruff format --check`
+on every push and pull request and will fail the build on violations.
+
+The in-container equivalents (`make lint`, `make format`, `make test`) still
+work and use the exact same toolchain baked into the worker image.
+
+Whenever you add, remove, or bump a dependency in `pyproject.toml`, regenerate
+the lockfile with `uv lock` and commit it alongside the change.
+
 ## Makefile Targets
 
 ```
-make help              # list all targets
-make up / down / logs  # docker compose lifecycle
-make run-pipeline      # end-to-end MVP (IMAP → LLM → TTS → MP3)
-make smoke-ingest      # test IMAP fetch + text cleaning
-make smoke-llm         # test Ollama transcript generation
-make smoke-tts         # test F5-TTS audio rendering
-make bootstrap-voices  # generate Piper reference clips
-make test / lint       # pytest + ruff inside the worker container
+make help                # list all targets
+make up / down / logs    # docker compose lifecycle
+make run-pipeline        # end-to-end MVP (IMAP → LLM → TTS → MP3)
+make smoke-ingest        # test IMAP fetch + text cleaning
+make smoke-llm           # test Ollama transcript generation
+make smoke-tts           # test F5-TTS audio rendering
+make bootstrap-voices    # generate Piper reference clips
+make test / lint         # pytest + ruff inside the worker container
+make install             # uv sync on the host (local dev env)
+make lint-local / test-local  # ruff + pytest on the host
 ```
 
 ## Status

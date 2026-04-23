@@ -93,6 +93,7 @@ def metrics() -> PlainTextResponse:
 
     try:
         from podletters.storage.episode_counter import EpisodeCounter
+
         counter_val = EpisodeCounter().current()
     except Exception:
         counter_val = 0
@@ -108,11 +109,11 @@ def metrics() -> PlainTextResponse:
         "",
         "# HELP podletters_rss_requests_total Total RSS feed requests served",
         "# TYPE podletters_rss_requests_total counter",
-        f'podletters_rss_requests_total {_metrics.get("rss_requests_total", 0)}',
+        f"podletters_rss_requests_total {_metrics.get('rss_requests_total', 0)}",
         "",
         "# HELP podletters_feed_regenerations_total Times the RSS feed was regenerated",
         "# TYPE podletters_feed_regenerations_total counter",
-        f'podletters_feed_regenerations_total {_metrics.get("feed_regenerations_total", 0)}',
+        f"podletters_feed_regenerations_total {_metrics.get('feed_regenerations_total', 0)}",
         "",
     ]
     return PlainTextResponse("\n".join(lines), media_type="text/plain; version=0.0.4")

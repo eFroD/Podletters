@@ -122,9 +122,7 @@ class F5TTSRenderer:
 
         return AudioChunk(audio=audio, sample_rate=sample_rate, speaker=segment.speaker)
 
-    def render_segments(
-        self, segments: list[TranscriptSegment]
-    ) -> list[AudioChunk]:
+    def render_segments(self, segments: list[TranscriptSegment]) -> list[AudioChunk]:
         """Render all segments sequentially (FR-03.2). Unloads model after."""
         logger.info("Rendering %d segments via F5-TTS", len(segments))
         chunks: list[AudioChunk] = []

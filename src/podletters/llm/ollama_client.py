@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class ChatMessage:
-    role: str   # "system" | "user" | "assistant"
+    role: str  # "system" | "user" | "assistant"
     content: str
 
 

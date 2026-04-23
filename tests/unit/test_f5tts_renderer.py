@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from podletters.models import TranscriptSegment
-from podletters.tts.f5tts_renderer import AudioChunk, F5TTSRenderer, VoiceProfile
+from podletters.tts.f5tts_renderer import AudioChunk, F5TTSRenderer
 
 
 @pytest.fixture()

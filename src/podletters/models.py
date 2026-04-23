@@ -48,9 +48,7 @@ class TranscriptPayload(BaseModel):
 class EpisodeMetadata(BaseModel):
     """Metadata persisted alongside each MP3 in MinIO (PRD §5.5)."""
 
-    episode_id: str = Field(
-        ..., description="Stable identifier, e.g. '20260407-tldr'"
-    )
+    episode_id: str = Field(..., description="Stable identifier, e.g. '20260407-tldr'")
     episode_number: int = Field(0, ge=0, description="Monotonic counter for itunes:episode")
     title: str
     description: str

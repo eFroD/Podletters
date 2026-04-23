@@ -24,7 +24,6 @@ import logging
 import sys
 from pathlib import Path
 
-import numpy as np
 import soundfile as sf
 
 from podletters.models import TranscriptPayload
@@ -35,10 +34,22 @@ _SAMPLE_TRANSCRIPT = {
     "episode_title": "TTS Smoke Test",
     "episode_description": "Rauchtest für die Sprachsynthese.",
     "segments": [
-        {"speaker": "HOST1", "text": "Hallo und willkommen zu unserem Podcast! Heute testen wir die Sprachsynthese."},
-        {"speaker": "HOST2", "text": "Genau, das wird spannend! Ich bin schon sehr gespannt auf die Qualität."},
-        {"speaker": "HOST1", "text": "Lass uns direkt loslegen. Das erste Thema ist künstliche Intelligenz."},
-        {"speaker": "HOST2", "text": "Oh ja, da hat sich in letzter Zeit wirklich sehr viel getan!"},
+        {
+            "speaker": "HOST1",
+            "text": "Hallo und willkommen zu unserem Podcast! Heute testen wir die Sprachsynthese.",
+        },
+        {
+            "speaker": "HOST2",
+            "text": "Genau, das wird spannend! Ich bin schon sehr gespannt auf die Qualität.",
+        },
+        {
+            "speaker": "HOST1",
+            "text": "Lass uns direkt loslegen. Das erste Thema ist künstliche Intelligenz.",
+        },
+        {
+            "speaker": "HOST2",
+            "text": "Oh ja, da hat sich in letzter Zeit wirklich sehr viel getan!",
+        },
     ],
 }
 
